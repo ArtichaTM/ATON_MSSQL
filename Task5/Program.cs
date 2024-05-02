@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 
+Console.OutputEncoding = Encoding.UTF8;
 CaseGenerator.GenerateCase().Solve();
 
 /// <summary>
@@ -15,10 +16,15 @@ class Train(Train? next, Train? prev) {
     public Train? prev = prev;
 
     /// <summary>
-    /// Algorithm steps
+    /// Algorithm itself
     /// </summary>
     static public IEnumerable<string> Steps(Train head) {
-        yield return "{Step info}";
+        head.LightsOn = !head.LightsOn;
+        bool TargetConvert = head.LightsOn;
+        uint amount_looped = 0;
+        uint amount_converted = 1;
+        Func<string> prefix = () => "looped="+amount_looped + ", converted="+amount_converted + ' ';
+        yield return prefix() + "Инвертирование текущей позиции";
         throw new Finished(99u);
     }
 }
@@ -54,15 +60,17 @@ class Case(Train head, uint length)
     public void Solve() {
         Console.WriteLine("> Selecting length " + length);
         Console.Write("\t 1");
-        for (uint i = 1; i < length; i++) {
-            Console.Write("   " + (i+1));
-        }
-        Console.WriteLine();
-        // Console.WriteLine("\t 1   2   3   4   5   6   7   8   9");
-        Console.WriteLine('\t' + PrintTrain() + ": Initialize");
+        for (uint i = 1; i < length; i++) { Console.Write("   " + (i+1)); }
+        Console.WriteLine("\n\t" + PrintTrain() + " : Initialize");
         try {
+            uint counter = 0;
             foreach (string step_info in Train.Steps(head)) {
-                Console.WriteLine('\t' + PrintTrain() + ": " + step_info);
+                Console.WriteLine("\t" + PrintTrain() + " : " + step_info);
+                counter++;
+                if (counter > 99) {
+                    Console.WriteLine("Finished because reached maximum steps: " + counter);
+                    break;
+                }
             }
         } catch (Train.Finished e) {
             Console.WriteLine("> Finished. Answer: " + e.answer + '\n');
