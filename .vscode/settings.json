@@ -1,7 +1,18 @@
 {
     "cSpell.words": [
         "commited",
+        "DATEPART",
         "sqliteonline",
         "uncommited"
-    ]
+    ],
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true,
+        "Task5/bin": true,
+        "Task5/obj": true
+    }
 }
