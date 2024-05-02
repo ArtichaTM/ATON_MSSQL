@@ -7,25 +7,56 @@ CaseGenerator.GenerateCase().Solve();
 /// <summary>
 /// Circular Linked List Node
 /// </summary>
-class Train(Train? next, Train? prev) {
+class Train(Train next, Train prev) {
     public class Finished(uint answer) : Exception { public uint answer = answer; }
 
-    public Train() : this(null, null) {}
     public bool LightsOn = CaseGenerator.rnd.Next(2) == 1;
-    public Train? next = next;
-    public Train? prev = prev;
+    public Train next = next;
+    public Train prev = prev;
 
     /// <summary>
     /// Algorithm itself
     /// </summary>
     static public IEnumerable<string> Steps(Train head) {
+        Func<bool, string> name = (bool v) => v switch {
+            true => "горит",
+            false => "потух"
+        };
+        yield return "Начало алгоритма";
+        bool targetLightsOn = !head.LightsOn;
+        yield return "Решено, что все вагоны будут " + (targetLightsOn ? "гореть" : "потушены");
         head.LightsOn = !head.LightsOn;
-        bool TargetConvert = head.LightsOn;
-        uint amount_looped = 0;
-        uint amount_converted = 1;
-        Func<string> prefix = () => "looped="+amount_looped + ", converted="+amount_converted + ' ';
-        yield return prefix() + "Инвертирование текущей позиции";
-        throw new Finished(99u);
+        yield return "Инвертирование света в текущем вагоне";
+        uint counter = 1;
+        while (true) {
+            head = head.next;
+            yield return "Переход в следующий вагон";
+            yield return "Текущий вагон " + name(head.LightsOn);
+            if (head.LightsOn != targetLightsOn) {
+                head.LightsOn = !head.LightsOn;
+                yield return "Инвертирование света в текущем вагоне";
+                counter++;
+                yield return "Увеличено количество вагонов на 1. Текущее: " + counter;
+            } else {
+                head.LightsOn = !targetLightsOn;
+                yield return "Инвертирование света в текущем вагоне";
+                for (uint i = 0; i < counter; i++) head = head.prev;
+                yield return "Возвращаемся назад на " + counter + " вагонов";
+                if (head.LightsOn == targetLightsOn) {
+                    yield return "В текущем вагоне свет не изменился";
+                    for (uint i = 0; i < counter; i++) head = head.next;
+                    yield return "Возвращаемся вперёд на " + counter + " вагонов";
+                    head.LightsOn = !head.LightsOn;
+                    yield return "Изменяем свет на изначальный";
+                    counter++;
+                    yield return "Увеличено количество вагонов на 1. Текущее: " + counter;
+                } else {
+                    yield return "В текущем вагоне свет изменился "
+                        + "=> мы сделали полный круг за " + counter + "вагонов";
+                    throw new Finished(counter);
+                }
+            }
+        }
     }
 }
 
@@ -47,7 +78,7 @@ class Case(Train head, uint length)
 
             builder
                 .Append('[')
-                .Append(node.LightsOn ? '-' : '+')
+                .Append(node.LightsOn ? '+' : '-')
                 .Append(']')
                 .Append(' ')
                 ;
@@ -61,16 +92,10 @@ class Case(Train head, uint length)
         Console.WriteLine("> Selecting length " + length);
         Console.Write("\t 1");
         for (uint i = 1; i < length; i++) { Console.Write("   " + (i+1)); }
-        Console.WriteLine("\n\t" + PrintTrain() + " : Initialize");
+        Console.Write('\n');
         try {
-            uint counter = 0;
             foreach (string step_info in Train.Steps(head)) {
                 Console.WriteLine("\t" + PrintTrain() + " : " + step_info);
-                counter++;
-                if (counter > 99) {
-                    Console.WriteLine("Finished because reached maximum steps: " + counter);
-                    break;
-                }
             }
         } catch (Train.Finished e) {
             Console.WriteLine("> Finished. Answer: " + e.answer + '\n');
@@ -85,13 +110,14 @@ static class CaseGenerator {
     public static Random rnd = new Random();
 
     public static Case GenerateCase() {
-        uint length = (uint) rnd.Next(4, 9);
-        Train[] trains = new Train[length];
+        // uint length = (uint) rnd.Next(4, 9);
+        uint length = 15;
+        Train[] trains = new Train[length]!;
 
         trains[0] = new(null, null);
         trains[length-1] = new(null, null);
         for (uint i = 1; i < length-1; i++) {
-            trains[i] = new();
+            trains[i] = new(null, null)!;
         }
         for (uint i = 1; i < length-1; i++) {
             trains[i].prev = trains[i-1];
