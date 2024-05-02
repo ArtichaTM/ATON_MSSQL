@@ -205,7 +205,7 @@
 # Задача 3
 Думаю, что это задача на оконные функции [LEAD/LAG](http://www.sql-tutorial.ru/ru/book_lag_and_lead_functions.html). Так оно и было, но легче от этого не стало. По какой-то причине числа в типе numeric сходили с ума и выдавал абсолютно нелогичные ответы. Я посидел, подумал, и пришёл к выводу, что лучше оставить всё как есть. Буду разбираться с этим, когда кандидатуру одобрят. А пока, пускай таблица остаётся с NUMERIC, а функция работает с REAL. Выборка включает в себя подзапрос, так как применить WHERE на оконных функциях невозможно
 <details>
-  <summary>1. Создание функции для нахождения процента</summary>
+  <summary>0. Создание функции для нахождения процента</summary>
   Функция конвертирует (при получении, не в самой функции) NUMERIC в REAL для нормальной работы
 
   ```SQL
@@ -222,7 +222,8 @@
 </details>
 
 <details>
-  <summary>2. Выборка</summary>
+  <summary>1. Выборка</summary>
+  По сути я много чего узнал про SQL Server, пока делал эту выборку
 
   ```SQL
   SELECT * FROM (
@@ -236,6 +237,13 @@
       FROM dbo.tblClosePrice t
     WINDOW w AS (PARTITION BY t.PriceAssetId ORDER BY t.PriceAssetId)
   ) AS s1 WHERE ABS(s1.Divergence) > 30
+  ```
+</details>
+
+<details>
+  <summary>1. Скрипт индексов</summary>
+
+  ```SQL
   ```
 </details>
 
