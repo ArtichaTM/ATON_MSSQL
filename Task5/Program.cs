@@ -23,10 +23,10 @@ class Train(Train next, Train prev) {
             false => "потух"
         };
         yield return "Начало алгоритма";
-        bool targetLightsOn = !head.LightsOn;
-        yield return "Решено, что все вагоны будут " + (targetLightsOn ? "гореть" : "потушены");
         head.LightsOn = !head.LightsOn;
-        yield return "Инвертирование света в текущем вагоне";
+        yield return "Переключаем свет в текущем вагоне";
+        bool targetLightsOn = head.LightsOn;
+        yield return "Решено, что все вагоны будут " + (targetLightsOn ? "гореть" : "потушены");
         uint counter = 1;
         while (true) {
             head = head.next;
@@ -34,12 +34,12 @@ class Train(Train next, Train prev) {
             yield return "Текущий вагон " + name(head.LightsOn);
             if (head.LightsOn != targetLightsOn) {
                 head.LightsOn = !head.LightsOn;
-                yield return "Инвертирование света в текущем вагоне";
+                yield return "Переключаем свет в текущем вагоне";
                 counter++;
                 yield return "Увеличено количество вагонов на 1. Текущее: " + counter;
             } else {
                 head.LightsOn = !targetLightsOn;
-                yield return "Инвертирование света в текущем вагоне";
+                yield return "Переключаем свет в текущем вагоне";
                 for (uint i = 0; i < counter; i++) head = head.prev;
                 yield return "Возвращаемся назад на " + counter + " вагонов";
                 if (head.LightsOn == targetLightsOn) {
@@ -47,12 +47,12 @@ class Train(Train next, Train prev) {
                     for (uint i = 0; i < counter; i++) head = head.next;
                     yield return "Возвращаемся вперёд на " + counter + " вагонов";
                     head.LightsOn = !head.LightsOn;
-                    yield return "Изменяем свет на изначальный";
+                    yield return "Переключаем свет в текущем вагоне";
                     counter++;
                     yield return "Увеличено количество вагонов на 1. Текущее: " + counter;
                 } else {
                     yield return "В текущем вагоне свет изменился "
-                        + "=> мы сделали полный круг за " + counter + "вагонов";
+                        + "=> мы сделали полный круг за " + counter + " вагонов";
                     throw new Finished(counter);
                 }
             }
@@ -90,8 +90,8 @@ class Case(Train head, uint length)
 
     public void Solve() {
         Console.WriteLine("> Selecting length " + length);
-        Console.Write("\t 1");
-        for (uint i = 1; i < length; i++) { Console.Write("   " + (i+1)); }
+        Console.Write("\t 0");
+        for (uint i = 1; i < length; i++) { Console.Write("   " + (i)); }
         Console.Write('\n');
         try {
             foreach (string step_info in Train.Steps(head)) {
@@ -110,8 +110,8 @@ static class CaseGenerator {
     public static Random rnd = new Random();
 
     public static Case GenerateCase() {
-        // uint length = (uint) rnd.Next(4, 9);
-        uint length = 15;
+        uint length = (uint) rnd.Next(4, 9);
+        // uint length = 10;
         Train[] trains = new Train[length]!;
 
         trains[0] = new(null, null);
