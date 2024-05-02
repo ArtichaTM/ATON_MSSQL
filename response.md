@@ -1,3 +1,6 @@
+# Примечания
+Используется сайт [sqliteonline.com](https://sqliteonline.com/), БД MS SQL 0.15.1 beta
+
 # Задача 1
 Решение:
 |                               |         T1        | T2            | T3            | T4                 |
