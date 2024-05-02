@@ -3,7 +3,8 @@
         "commited",
         "DATEPART",
         "sqliteonline",
-        "uncommited"
+        "uncommited",
+        "подзапрос"
     ],
     "files.exclude": {
         "**/.git": true,

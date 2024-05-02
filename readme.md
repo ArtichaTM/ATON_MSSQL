@@ -203,6 +203,41 @@
 </details>
 
 # Задача 3
+Думаю, что это задача на оконные функции [LEAD/LAG](http://www.sql-tutorial.ru/ru/book_lag_and_lead_functions.html). Так оно и было, но легче от этого не стало. По какой-то причине числа в типе numeric сходили с ума и выдавал абсолютно нелогичные ответы. Я посидел, подумал, и пришёл к выводу, что лучше оставить всё как есть. Буду разбираться с этим, когда кандидатуру одобрят. А пока, пускай таблица остаётся с NUMERIC, а функция работает с REAL. Выборка включает в себя подзапрос, так как применить WHERE на оконных функциях невозможно
+<details>
+  <summary>1. Создание функции для нахождения процента</summary>
+  Функция конвертирует (при получении, не в самой функции) NUMERIC в REAL для нормальной работы
+
+  ```SQL
+  CREATE FUNCTION FindPercent (
+    @current REAL,
+    @previous REAL
+  )
+  RETURNS REAL
+  AS
+  BEGIN
+    RETURN ((@previous-@current)/@previous*100);
+  END
+  ```
+</details>
+
+<details>
+  <summary>2. Выборка</summary>
+
+  ```SQL
+  SELECT * FROM (
+    SELECT
+    t.PriceDate as DateT
+      , t.PriceAssetId AssetId
+      , t.ClosePrice PriceT
+      , LAG(t.ClosePrice)OVER w AS PriceT1
+      , dbo.FindPercent(t.ClosePrice, LAG(t.ClosePrice) OVER w) AS Divergence
+      --, (t.ClosePrice/LAG(t.ClosePrice) OVER w) - 1 AS Divergence
+      FROM dbo.tblClosePrice t
+    WINDOW w AS (PARTITION BY t.PriceAssetId ORDER BY t.PriceAssetId)
+  ) AS s1 WHERE ABS(s1.Divergence) > 30
+  ```
+</details>
 
 # Задача 4
 
