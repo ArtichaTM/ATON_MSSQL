@@ -76,7 +76,131 @@
 [Источник](https://www.geeksforgeeks.org/how-to-group-by-day-date-hour-month-or-year-in-sql-server/)
 
 # Задача 2
+<details>
+  <summary>0. Создание таблиц, заполнение данными</summary>
 
+  ```SQL
+  BEGIN TRAN
+  CREATE TABLE tblClient (
+    ClientId int PRIMARY KEY
+    , Name varchar(255)
+  )
+  CREATE TABLE tblClientPayments (
+    ClientId int NOT NULL
+    , PaymentDate date
+    , PaymentSum int
+    , CONSTRAINT FK_ClientId FOREIGN KEY (ClientId)
+          REFERENCES tblClient (ClientId)
+          ON DELETE CASCADE
+  )
+  INSERT INTO tblClient VALUES
+    (1, 'Иванов Иван Иванович')
+      , (2, 'Петров Петр Петрович')
+      , (3, 'Кузнецова Анна Андреевна')
+      , (4, 'Тихонова Светлана Анатольевна')
+  INSERT INTO tblClientPayments VALUES 
+    (1, '2022-02-01', 4000)
+    , (1, '2022-02-05', 6000)
+    , (3, '2022-03-02', 10000)
+    , (4, '2022-03-09', 1000)
+    , (1, '2022-03-16', 2000)
+  COMMIT TRAN
+  ```
+</details>
+
+<details>
+  <summary>1. Выбрать всех клиентов (ClientId, Name) и посчитать по каждому общую сумму платежей (TotalSum)</summary>
+  
+  Немного информации: используется [RIGHT JOIN](https://learn.microsoft.com/ru-ru/sql/relational-databases/performance/joins?view=sql-server-ver16#fundamentals), где правая таблица имеет информацию о клиентах, однако клиенты могут совершить ни одного платежа. Для такого случая используется функция [ISNULL](https://learn.microsoft.com/ru-ru/sql/t-sql/functions/isnull-transact-sql?view=sql-server-ver16), которая заменяет NULL на 0
+  ```SQL
+  SELECT client.ClientId as ClientId
+    , MAX(client.Name) as Name
+    , ISNULL(SUM(payment.PaymentSum), 0)
+  FROM tblClientPayments as payment
+  RIGHT JOIN tblClient as client On payment.ClientId = client.ClientId
+  GROUP BY client.ClientId
+  ```
+</details>
+
+<details>
+  <summary>2. Выбрать всех клиентов (ClientId, Name, TotalSum), у которых либо есть платежи после 05.03.2022, либо сумма всех платежей превышает 7000</summary>
+
+  ```SQL
+  SELECT
+	client.ClientId as ClientId
+    , MAX(client.Name) as Name
+    , ISNULL(SUM(payment.PaymentSum), 0)
+  FROM tblClientPayments as payment
+  RIGHT JOIN tblClient as client On payment.ClientId = client.ClientId
+  GROUP BY client.ClientId
+  HAVING
+    ISNULL(SUM(payment.PaymentSum), 0) > 7000
+      OR
+    MAX(payment.PaymentDate) > '2022-03-05'
+  ```
+</details>
+
+<details>
+  <summary>3. Выбрать постоянных клиентов (ClientId, Name), то есть клиентов, у которых есть платежи по крайней мере в двух разных календарных месяцах одного года</summary>
+
+  1. Группировка сначала по клиенту, потом по году. В итоге мы имеем таблицу с каждым клиентом за год
+  2. Исключаем строки, в которых количество месяцев в году (в которых были оплаты) не превышает 1
+
+  ```SQL
+  SELECT
+  client.ClientId as ClientId
+    , MAX(client.Name) as Name
+  FROM tblClientPayments as payment
+  RIGHT JOIN tblClient as client On payment.ClientId = client.ClientId
+  GROUP BY client.ClientId, DATEPART(YEAR, payment.PaymentDate)
+  HAVING COUNT(DISTINCT MONTH(payment.PaymentDate)) > 1
+  ```
+</details>
+
+<details>
+  <summary>4. Измените платёж Кузнецовой Анны Андреевны от 02.03.2022, применив к нему скидку 10% (Уменьшите на 10%). Напишите SQL запрос</summary>
+
+  - Для производительности "уменьшите на 10%" заменено на "оставьте 90%" ( `x*0.9 = x-(x*0.1)` ).
+  - Транзакция и SELECT-ы выполняют вспомогательную роль для удобства
+
+  ```SQL
+  BEGIN TRAN
+  SELECT c.ClientId, c.Name, p.PaymentDate, p.PaymentSum FROM tblClientPayments p LEFT JOIN tblClient c ON p.ClientId=c.ClientId
+
+  UPDATE payment
+  SET payment.PaymentSum = payment.PaymentSum*0.9
+  FROM tblClientPayments payment
+    RIGHT JOIN tblClient AS client
+      ON payment.ClientId = client.ClientId
+  WHERE
+    client.Name = 'Кузнецова Анна Андреевна'
+      AND
+      payment.PaymentDate = '2022-03-02'
+
+  SELECT c.ClientId, c.Name, p.PaymentDate, p.PaymentSum FROM tblClientPayments p LEFT JOIN tblClient c ON p.ClientId=c.ClientId
+  ROLLBACK TRAN
+  ```
+</details>
+
+<details>
+  <summary>5. Добавьте платёж Петрова Петра Петровича за текущую дату на сумму 18000</summary>
+
+  **ВНИАМНИЕ!**. На сайте [sqliteonline.com](https://sqliteonline.com/) вся кириллица заменяется знаками вопроса, и поменять это никак нельзя! Поэтому запрос ниже добавляет две строчки, а не одну, так как строчки "Иванов Иван Иванович" и "Петров Петр Петрович" имеют одинаковую длину, которые потом превращаются в знаки вопроса и делает их равными.
+  - Так же, как и в прошлой задаче, транзакция и SELECT-ы приводятся для удобства
+  ```SQL
+  BEGIN TRAN
+  SELECT c.ClientId, c.Name, p.PaymentDate, p.PaymentSum FROM tblClientPayments p LEFT JOIN tblClient c ON p.ClientId=c.ClientId
+
+  INSERT
+      INTO tblClientPayments (ClientId, PaymentDate, PaymentSum)
+      SELECT client.ClientId, getdate(), 18000
+        FROM tblClient client
+        WHERE client.Name = 'Петров Петр Петрович'
+
+  SELECT c.ClientId, c.Name, p.PaymentDate, p.PaymentSum FROM tblClientPayments p LEFT JOIN tblClient c ON p.ClientId=c.ClientId
+  ROLLBACK TRAN
+  ```
+</details>
 
 # Задача 3
 
